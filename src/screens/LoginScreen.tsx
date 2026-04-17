@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
+import { api, getApiErrorMessage } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
 
 export default function LoginScreen({ navigation }: any) {
@@ -9,27 +10,37 @@ export default function LoginScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password) return;
+    if (!email || !password) {
+      Alert.alert('Error', 'Por favor ingresa tu correo y contraseña');
+      return;
+    }
     setLoading(true);
 
-    // MOCK LOGIN LOGIC:
-    // En un futuro, aquí llamarías a tu API:
-    // const response = await api.post('/login', { email, password });
-    // const { token, user, role } = response.data;
-    
-    // Simulamos un delay de red
-    setTimeout(async () => {
-      let role: 'Admin' | 'User' = 'User';
-      if (email.toLowerCase() === 'admin@test.com') {
-        role = 'Admin';
-      }
-      
-      const mockToken = 'jwt_mock_token_12345';
-      const mockUser = { email };
+    try {
+      const response = await api.post('/api/auth/login', {
+        email: email.trim(),
+        password,
+      });
 
-      await login(mockToken, mockUser, role);
+      const { token, data } = response.data;
+      
+      // Mapeo de roles del backend (ADMIN/PRODUCER) a los de la App (Admin/User)
+      const appRole = data.role === 'ADMIN' ? 'Admin' : 'User';
+
+      await login(token, data, appRole);
+      
+    } catch (error: unknown) {
+      console.error('[LOGIN_ERROR]', error);
+      const err = error as { response?: { status?: number; data?: { message?: string } } };
+      const message =
+        err.response?.status === 401 || err.response?.status === 400
+          ? err.response?.data?.message || 'Correo o contraseña incorrectos.'
+          : getApiErrorMessage(error, 'No se pudo conectar con el servidor.');
+
+      Alert.alert('Error de Inicio de Sesión', message);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -38,8 +49,8 @@ export default function LoginScreen({ navigation }: any) {
       style={styles.container}
     >
       <View style={styles.card}>
-        <Text style={styles.title}>Bienvenido</Text>
-        <Text style={styles.subtitle}>Inicia sesión en tu cuenta</Text>
+        <Text style={styles.title}>Arreos</Text>
+        <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
 
         <TextInput
           style={styles.input}
@@ -98,15 +109,17 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2d3436',
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#0984e3',
     marginBottom: 5,
+    textAlign: 'center'
   },
   subtitle: {
     fontSize: 15,
     color: '#636e72',
     marginBottom: 30,
+    textAlign: 'center'
   },
   input: {
     backgroundColor: '#f1f2f6',
@@ -131,7 +144,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   linkText: {
