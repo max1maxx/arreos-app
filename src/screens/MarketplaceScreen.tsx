@@ -33,6 +33,17 @@ export const MarketplaceScreen = () => {
   const [activeChip, setActiveChip] = useState('Todos');
   const [searchInput, setSearchInput] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
+  
+  // Estados para filtros
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [filters, setFilters] = useState({
+    minPrice: '',
+    maxPrice: '',
+    radius: '',
+    province: '',
+    city: '',
+    category: 'Todos'
+  });
 
   // Debounce para búsqueda
   useEffect(() => {
@@ -45,7 +56,17 @@ export const MarketplaceScreen = () => {
     try {
       const params: any = {};
       if (debouncedQ) params.q = debouncedQ;
-      if (activeChip !== 'Todos') params.category = activeChip;
+      
+      // Aplicar categoría desde chips o filtro
+      const cat = activeChip !== 'Todos' ? activeChip : filters.category;
+      if (cat !== 'Todos') params.category = cat;
+
+      // Aplicar filtros adicionales
+      if (filters.minPrice) params.minPrice = filters.minPrice;
+      if (filters.maxPrice) params.maxPrice = filters.maxPrice;
+      if (filters.radius) params.radius = filters.radius;
+      if (filters.province) params.province = filters.province;
+      if (filters.city) params.city = filters.city;
 
       const response = await api.get('/api/livestock', { params });
       const data = parseLivestockListResponse(response.data);
@@ -57,7 +78,7 @@ export const MarketplaceScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [debouncedQ, activeChip]);
+  }, [debouncedQ, activeChip, filters]);
 
   useEffect(() => {
     fetchListings();
@@ -66,6 +87,24 @@ export const MarketplaceScreen = () => {
   const onRefresh = () => {
     setRefreshing(true);
     fetchListings();
+  };
+
+  const applyFilters = () => {
+    setIsFilterVisible(false);
+    fetchListings();
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      minPrice: '',
+      maxPrice: '',
+      radius: '',
+      province: '',
+      city: '',
+      category: 'Todos'
+    });
+    setActiveChip('Todos');
+    setIsFilterVisible(false);
   };
 
   const renderItem = ({ item }: { item: any }) => {
@@ -80,9 +119,6 @@ export const MarketplaceScreen = () => {
           <Image 
             source={{ uri: mainImage }} 
             style={styles.productImage}
-            onLoadStart={() => console.log('[IMAGE_LOAD_START]', mainImage)}
-            onLoad={() => console.log('[IMAGE_LOAD_SUCCESS]', mainImage)}
-            onError={(e) => console.error('[IMAGE_LOAD_ERROR]', e.nativeEvent.error, mainImage)}
           />
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
             <Text style={styles.statusBadgeText}>{getStatusLabel(item.status)}</Text>
@@ -105,18 +141,116 @@ export const MarketplaceScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['right', 'left']}>
       <View style={styles.header}>
-        <View style={styles.searchBar}>
-          <Search size={20} color={COLORS.text.muted} />
-          <TextInput
-            placeholder="Buscar ganado, raza..."
-            style={styles.searchInput}
-            value={searchInput}
-            onChangeText={setSearchInput}
-          />
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Search size={20} color={COLORS.text.muted} />
+            <TextInput
+              placeholder="Buscar ganado, raza..."
+              style={styles.searchInput}
+              value={searchInput}
+              onChangeText={setSearchInput}
+            />
+          </View>
+          <TouchableOpacity 
+            style={styles.filterButton} 
+            onPress={() => setIsFilterVisible(true)}
+          >
+            <SlidersHorizontal size={22} color={COLORS.primary} />
+          </TouchableOpacity>
         </View>
       </View>
+
+      {/* Modal de Filtros */}
+      <Modal
+        visible={isFilterVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsFilterVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Filtros Avanzados</Text>
+              <TouchableOpacity onPress={() => setIsFilterVisible(false)}>
+                <X size={24} color="#1E293B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll}>
+              {/* Categoría */}
+              <Text style={styles.filterLabel}>Categoría</Text>
+              <View style={styles.modalChips}>
+                {chips.map((c) => (
+                  <TouchableOpacity
+                    key={c}
+                    style={[styles.modalChip, filters.category === c && styles.modalChipActive]}
+                    onPress={() => setFilters({ ...filters, category: c })}
+                  >
+                    <Text style={[styles.modalChipText, filters.category === c && styles.modalChipTextActive]}>{c}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Precio */}
+              <Text style={styles.filterLabel}>Rango de Precio ($)</Text>
+              <View style={styles.row}>
+                <TextInput
+                  placeholder="Mínimo"
+                  keyboardType="numeric"
+                  style={[styles.input, { flex: 1, marginRight: 8 }]}
+                  value={filters.minPrice}
+                  onChangeText={(v) => setFilters({ ...filters, minPrice: v })}
+                />
+                <TextInput
+                  placeholder="Máximo"
+                  keyboardType="numeric"
+                  style={[styles.input, { flex: 1 }]}
+                  value={filters.maxPrice}
+                  onChangeText={(v) => setFilters({ ...filters, maxPrice: v })}
+                />
+              </View>
+
+              {/* Radio en metros */}
+              <Text style={styles.filterLabel}>Radio de búsqueda (metros)</Text>
+              <TextInput
+                placeholder="Ej: 5000"
+                keyboardType="numeric"
+                style={styles.input}
+                value={filters.radius}
+                onChangeText={(v) => setFilters({ ...filters, radius: v })}
+              />
+
+              {/* Provincia y Ciudad */}
+              <Text style={styles.filterLabel}>Provincia</Text>
+              <TextInput
+                placeholder="Nombre de la provincia"
+                style={styles.input}
+                value={filters.province}
+                onChangeText={(v) => setFilters({ ...filters, province: v })}
+              />
+
+              <Text style={styles.filterLabel}>Ciudad</Text>
+              <TextInput
+                placeholder="Nombre de la ciudad"
+                style={styles.input}
+                value={filters.city}
+                onChangeText={(v) => setFilters({ ...filters, city: v })}
+              />
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
+                <Text style={styles.clearButtonText}>Limpiar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.applyButton} onPress={applyFilters}>
+                <Text style={styles.applyButtonText}>Aplicar Filtros</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <View style={styles.chipScrollContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
@@ -164,9 +298,32 @@ export const MarketplaceScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { padding: 16, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
-  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', borderRadius: 12, paddingHorizontal: 12, height: 45 },
+  header: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
+  searchContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', borderRadius: 12, paddingHorizontal: 12, height: 45 },
+  filterButton: { width: 45, height: 45, backgroundColor: '#F1F5F9', borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
   searchInput: { flex: 1, marginLeft: 8, fontSize: 16, color: '#1E293B' },
+  
+  // Estilos del Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '80%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: '#1E293B' },
+  modalScroll: { marginBottom: 20 },
+  filterLabel: { fontSize: 14, fontWeight: '700', color: '#64748B', marginBottom: 8, marginTop: 16 },
+  row: { flexDirection: 'row', alignItems: 'center' },
+  input: { backgroundColor: '#F1F5F9', borderRadius: 12, padding: 12, fontSize: 14, color: '#1E293B', borderWidth: 1, borderColor: '#E2E8F0' },
+  modalChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  modalChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, backgroundColor: '#F1F5F9', borderSize: 1, borderColor: '#E2E8F0' },
+  modalChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  modalChipText: { fontSize: 12, color: '#64748B', fontWeight: '600' },
+  modalChipTextActive: { color: 'white' },
+  modalFooter: { flexDirection: 'row', gap: 12, paddingBottom: Platform.OS === 'ios' ? 20 : 0 },
+  clearButton: { flex: 1, padding: 16, borderRadius: 12, alignItems: 'center', backgroundColor: '#F1F5F9' },
+  clearButtonText: { color: '#64748B', fontWeight: '700' },
+  applyButton: { flex: 2, padding: 16, borderRadius: 12, alignItems: 'center', backgroundColor: COLORS.primary },
+  applyButtonText: { color: 'white', fontWeight: '700' },
+
   chipScrollContainer: { backgroundColor: 'white', paddingVertical: 8 },
   chips: { paddingHorizontal: 16, gap: 8 },
   chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' },

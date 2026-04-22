@@ -14,8 +14,8 @@ export const COLORS = {
 
 export const MOCK_DATA = {
   feed: [
-    { id: '1', user: 'Finca La Esperanza', time: 'hace 2h', text: 'Excelente lote de novillos Angus para subasta este sábado.', image: 'https://images.unsplash.com/photo-1546445317-29f4545e9d53?q=80&w=800&auto=format&fit=crop' },
-    { id: '2', user: 'Ganadería Del Norte', time: 'hace 5h', text: 'Nueva llegada de toros Brahman de alto registro.', image: 'https://images.unsplash.com/photo-1628151015968-3a4429e9ef04?q=80&w=800&auto=format&fit=crop' }
+    { id: '1', user: 'Finca La Esperanza', time: 'hace 2h', text: 'Excelente lote de novillos Angus para subasta este sábado.', image: 'https://arreos.fregodesigns.com/api/media/community/img_pub1.jpg' },
+    { id: '2', user: 'Ganadería Del Norte', time: 'hace 5h', text: 'Nueva llegada de toros Brahman de alto registro.', image: 'https://arreos.fregodesigns.com/api/media/community/img_pub2.jpg' }
   ],
   marketplace: [
     { id: '1', title: 'Novillos Angus Negros', price: '$25,000', location: 'Chihuahua, MX', weight: '450kg', fat: '7%', breed: 'Angus', image: 'https://images.unsplash.com/photo-1546445317-29f4545e9d53?q=80&w=400&auto=format&fit=crop' },

@@ -1,48 +1,35 @@
 import { Platform } from 'react-native';
 
 /**
- * Host del backend en la red local.
+ * Production-ready API Configuration
  */
-export const API_LAN_HOST = '192.168.101.6';
-export const API_PORT = 3000;
+const CONFIG = {
+  API_URL: 'https://arreos.fregodesigns.com',
+  DEV_API_URL: Platform.select({
+    android: 'http://10.0.2.2:3000', 
+    ios: 'http://localhost:3000',     
+    default: 'http://localhost:3000',
+  }),
+  TIMEOUT: 15000,
+};
 
-export function getApiBaseUrl(): string {
-  if (Platform.OS === 'web') {
-    return `http://localhost:${API_PORT}`;
-  }
-  return `http://${API_LAN_HOST}:${API_PORT}`;
-}
-
-export const API_BASE_URL = getApiBaseUrl();
+export const getApiUrl = () => {
+  return CONFIG.API_URL;
+};
 
 /**
- * Genera la URL absoluta para el API, evitando dobles barras.
+ * Global Utility for Media URLs
+ * Automatically formats the path to point to our media route
  */
-export function apiPath(path: string): string {
-  if (!path) return API_BASE_URL;
-  
-  // Normalizamos el path: quitamos la barra inicial si existe
-  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-  
-  // Unimos el BASE_URL con el path usando una sola barra
-  return `${API_BASE_URL}/${cleanPath}`;
-}
-
-/**
- * URL para mostrar fotos usando el proxy de media.
- * Garantiza una URL limpia sin dobles barras que bloqueen el móvil.
- */
-export function mediaUrl(path: string): string {
-  if (!path) return 'https://via.placeholder.com/400?text=Sin+Imagen';
+export const mediaUrl = (path: string | null | undefined): string => {
+  if (!path) return '';
   if (path.startsWith('http')) return path;
   
-  // 1. Quitamos cualquier rastro de barra inicial del path de la DB
-  const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
+  // Clean path: remove leading slashes if any
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
   
-  // 2. Construimos la ruta pasando por el proxy de media
-  // Resultado: http://IP:3000/api/media/uploads/users/...
-  const finalUrl = apiPath(`api/media/${normalizedPath}`);
-  
-  console.log('[IMAGE_URL_DEBUG]:', finalUrl);
-  return finalUrl;
-}
+  // Our backend serves media via /api/media/...
+  return `${getApiUrl()}/api/media/${cleanPath}`;
+};
+
+export default CONFIG;

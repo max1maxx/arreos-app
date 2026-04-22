@@ -37,9 +37,17 @@ function toWhatsAppDigits(phone: string | undefined | null): string | null {
 export const LivestockDetailScreen = ({ route, navigation }: any) => {
   const { item } = route.params;
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const images = item.images_url?.map((img: string) => mediaUrl(img)) || [];
   const sellerPhone = item.seller?.phone?.trim() || '';
+
+  const handleScroll = (event: any) => {
+    const slide = Math.ceil(event.nativeEvent.contentOffset.x / event.nativeEvent.layoutMeasurement.width);
+    if (slide !== activeIndex) {
+      setActiveIndex(slide);
+    }
+  };
 
   const openCall = async () => {
     if (!sellerPhone) {
@@ -85,29 +93,52 @@ export const LivestockDetailScreen = ({ route, navigation }: any) => {
           </TouchableOpacity>
         </View>
 
-        <ScrollView 
-          horizontal 
-          pagingEnabled 
-          showsHorizontalScrollIndicator={false}
-          style={styles.imageContainer}
-        >
-          {images.length > 0 ? (
-            images.map((img: string, index: number) => (
-              <TouchableOpacity 
-                key={index} 
-                activeOpacity={0.9}
-                onPress={() => setSelectedImage(img)}
-              >
-                <Image source={{ uri: img }} style={styles.mainImage} />
-              </TouchableOpacity>
-            ))
-          ) : (
-            <Image 
-              source={{ uri: 'https://via.placeholder.com/600?text=Sin+Foto' }} 
-              style={styles.mainImage} 
-            />
+        <View style={styles.imageWrapper}>
+          <ScrollView 
+            horizontal 
+            pagingEnabled 
+            showsHorizontalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            style={styles.imageContainer}
+          >
+            {images.length > 0 ? (
+              images.map((img: string, index: number) => (
+                <TouchableOpacity 
+                  key={index} 
+                  activeOpacity={0.9}
+                  onPress={() => setSelectedImage(img)}
+                >
+                  <Image source={{ uri: img }} style={styles.mainImage} />
+                </TouchableOpacity>
+              ))
+            ) : (
+              <Image 
+                source={{ uri: 'https://via.placeholder.com/600?text=Sin+Foto' }} 
+                style={styles.mainImage} 
+              />
+            )}
+          </ScrollView>
+
+          {images.length > 1 && (
+            <>
+              <View style={styles.pagination}>
+                {images.map((_: any, i: number) => (
+                  <View 
+                    key={i} 
+                    style={[
+                      styles.paginationDot, 
+                      activeIndex === i ? styles.paginationDotActive : styles.paginationDotInactive
+                    ]} 
+                  />
+                ))}
+              </View>
+              <View style={styles.imageCounter}>
+                <Text style={styles.imageCounterText}>{activeIndex + 1} / {images.length}</Text>
+              </View>
+            </>
           )}
-        </ScrollView>
+        </View>
 
         <View style={styles.content}>
           <View style={styles.priceRow}>
@@ -219,8 +250,31 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'white' },
   headerActions: { position: 'absolute', top: 50, left: 20, zIndex: 10 },
   backBtn: { backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 20, padding: 8 },
+  imageWrapper: { position: 'relative' },
   imageContainer: { width: width, height: 350 },
   mainImage: { width: width, height: 350, backgroundColor: '#eee' },
+  pagination: { 
+    position: 'absolute', 
+    bottom: 15, 
+    width: '100%', 
+    flexDirection: 'row', 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    gap: 6
+  },
+  paginationDot: { height: 8, borderRadius: 4 },
+  paginationDotActive: { width: 20, backgroundColor: 'white' },
+  paginationDotInactive: { width: 8, backgroundColor: 'rgba(255,255,255,0.5)' },
+  imageCounter: { 
+    position: 'absolute', 
+    bottom: 15, 
+    right: 20, 
+    backgroundColor: 'rgba(0,0,0,0.5)', 
+    paddingHorizontal: 10, 
+    paddingVertical: 4, 
+    borderRadius: 12 
+  },
+  imageCounterText: { color: 'white', fontSize: 12, fontWeight: 'bold' },
   content: { padding: 20 },
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   price: { fontSize: 28, fontWeight: '900', color: COLORS.primary },

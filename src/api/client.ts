@@ -1,61 +1,80 @@
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import { API_BASE_URL } from '../config/api';
+import CONFIG, { getApiUrl } from '../config/api';
 
 /**
- * Cliente Axios profesional y flexible.
- * No forzamos Content-Type para permitir que Axios detecte 
- * automáticamente entre JSON y FormData.
+ * Robust API Client for Mobile
+ * Handles:
+ * 1. Automatic JWT Attachment
+ * 2. 401 (Unauthorized) Redirection/Logout
+ * 3. Base Timeout and Headers
  */
-export const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 60000,
+
+const apiClient = axios.create({
+  baseURL: getApiUrl(),
+  timeout: CONFIG.TIMEOUT,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
 });
 
-// Interceptor para inyectar el Token
-api.interceptors.request.use(async (config) => {
-  try {
-    const token = await SecureStore.getItemAsync('jwtToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+// REQUEST INTERCEPTOR: Inject the Auth Token automatically
+apiClient.interceptors.request.use(
+  async (config: InternalAxiosRequestConfig) => {
+    try {
+      const token = await SecureStore.getItemAsync('userToken');
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (e) {
+      console.error('API Client: Error retrieving token', e);
     }
-    
-    // IMPORTANTE: No definimos Content-Type aquí. 
-    // Si config.data es un FormData, Axios pondrá multipart/form-data.
-    // Si config.data es un objeto { }, Axios pondrá application/json.
-  } catch (error) {
-    console.error('[API_CLIENT] Error al leer token');
-  }
-  return config;
-});
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-// Manejo centralizado de errores
-api.interceptors.response.use(
+// RESPONSE INTERCEPTOR: Handle global error cases (e.g., 401 Logout)
+apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    let message = 'Error inesperado';
-    
+    const originalRequest = error.config;
+
+    // Handle session expiration
     if (error.response?.status === 401) {
-      await SecureStore.deleteItemAsync('jwtToken');
-      await SecureStore.deleteItemAsync('userRole');
+      console.warn('API Client: Unauthorized request detected. Forcing logout...');
+      
+      // Clean up local storage
+      await SecureStore.deleteItemAsync('userToken');
       await SecureStore.deleteItemAsync('userData');
+      
+      // We could add a navigation redirect here or use a Context event
+      // emitter to force a login screen if needed.
     }
 
-    if (error.response) {
-      const data = error.response.data as any;
-      message = data?.message || data?.error || `Error ${error.response.status}`;
-    } else if (error.request) {
-      message = 'El servidor no respondió. Revisa la IP y tu conexión WiFi.';
-    } else {
-      message = error.message;
-    }
-    
-    const customError = error as any;
-    customError.userMessage = message;
+    // Enhance error message for the UI
+    const customError = {
+      ...error,
+      message: (error.response?.data as any)?.message || error.message || 'Error de conexión con el servidor',
+    };
+
     return Promise.reject(customError);
   }
 );
 
-export function getApiErrorMessage(error: any, fallback = 'Error'): string {
-  return error?.userMessage || error?.message || fallback;
-}
+/**
+ * Global Utility for API Error Messages
+ */
+export const getApiErrorMessage = (error: any, defaultMessage: string = 'Error de conexión'): string => {
+  if (error.response?.data?.message) {
+    return error.response.data.message;
+  }
+  if (error.message) {
+    return error.message;
+  }
+  return defaultMessage;
+};
+
+export const api = apiClient;
+export default apiClient;
