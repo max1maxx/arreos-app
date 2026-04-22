@@ -14,6 +14,7 @@ import {
   Modal,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, SlidersHorizontal, MapPin, Plus, X } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { api, getApiErrorMessage } from '../api/client';
@@ -76,7 +77,13 @@ export const MarketplaceScreen = () => {
         onPress={() => navigation.navigate('LivestockDetail', { item })}
       >
         <View style={styles.imageContainer}>
-          <Image source={{ uri: mainImage }} style={styles.productImage} />
+          <Image 
+            source={{ uri: mainImage }} 
+            style={styles.productImage}
+            onLoadStart={() => console.log('[IMAGE_LOAD_START]', mainImage)}
+            onLoad={() => console.log('[IMAGE_LOAD_SUCCESS]', mainImage)}
+            onError={(e) => console.error('[IMAGE_LOAD_ERROR]', e.nativeEvent.error, mainImage)}
+          />
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
             <Text style={styles.statusBadgeText}>{getStatusLabel(item.status)}</Text>
           </View>
@@ -98,7 +105,7 @@ export const MarketplaceScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <View style={styles.searchBar}>
           <Search size={20} color={COLORS.text.muted} />
@@ -151,7 +158,7 @@ export const MarketplaceScreen = () => {
       >
         <Plus color="white" size={28} />
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 };
 

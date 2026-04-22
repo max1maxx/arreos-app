@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { 
   View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, 
-  Dimensions, SafeAreaView, Modal, Linking, Alert 
+  Dimensions, Modal, Linking, Alert 
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MapPin, Scale, Hash, DollarSign, ChevronLeft, X, Phone, MessageCircle } from 'lucide-react-native';
 import { COLORS } from '../theme/constants';
 import { mediaUrl } from '../config/api';
