@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import {
   View,
   Text,
@@ -15,27 +15,31 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, SlidersHorizontal, MapPin, Plus, X } from 'lucide-react-native';
+import { Search, SlidersHorizontal, MapPin, Plus, X, User } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { api, getApiErrorMessage } from '../api/client';
 import { mediaUrl } from '../config/api';
 import { parseLivestockListResponse } from '../utils/parseLivestockListResponse';
 import { getStatusLabel, getStatusColor } from '../utils/statusTranslations';
 import { useTheme } from '../context/ThemeContext';
+import { useLivestock } from '../context/LivestockContext';
+import { AuthContext } from '../context/AuthContext';
 
 const chips = ['Todos', 'Bovino', 'Porcino', 'Equino', 'Ovinos'];
 
 export const MarketplaceScreen = () => {
   const navigation = useNavigation<any>();
   const { theme, isDarkMode } = useTheme();
-  const [listings, setListings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useContext(AuthContext);
+  const { listings, isLoading, refreshListings } = useLivestock();
+  
+  const [localListings, setLocalListings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeChip, setActiveChip] = useState('Todos');
+  const [onlyMine, setOnlyMine] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
 
-  // Estados para filtros
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [filters, setFilters] = useState({
     minPrice: '',
@@ -46,51 +50,65 @@ export const MarketplaceScreen = () => {
     category: 'Todos'
   });
 
-  // Debounce para búsqueda
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(searchInput.trim()), 500);
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  const fetchListings = useCallback(async () => {
+  const fetchFilteredListings = useCallback(async () => {
+    // Si no hay búsqueda, ni filtros, ni "Solo mías", usamos el estado global optimizado
+    const hasActiveFilters = debouncedQ || filters.category !== 'Todos' || filters.minPrice || filters.maxPrice || filters.province || filters.city || onlyMine;
+    
+    if (!hasActiveFilters) {
+      setLocalListings(listings);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const params: any = {};
       if (debouncedQ) params.q = debouncedQ;
-
-      const cat = activeChip !== 'Todos' ? activeChip : filters.category;
-      if (cat !== 'Todos') params.category = cat;
-
+      if (filters.category !== 'Todos') params.category = filters.category;
       if (filters.minPrice) params.minPrice = filters.minPrice;
       if (filters.maxPrice) params.maxPrice = filters.maxPrice;
-      if (filters.radius) params.radius = filters.radius;
       if (filters.province) params.province = filters.province;
       if (filters.city) params.city = filters.city;
+      
+      // Filtro por "Mis Publicaciones" usando el nuevo parámetro del backend
+      if (onlyMine && user?.id) {
+        params.sellerId = user.id;
+      }
 
       const response = await api.get('/api/livestock', { params });
-      const data = parseLivestockListResponse(response.data);
-      setListings(data);
+      setLocalListings(parseLivestockListResponse(response.data));
     } catch (error) {
-      console.error('[MARKETPLACE_FETCH_ERROR]', error);
-      Alert.alert('Error', getApiErrorMessage(error, 'No se pudieron cargar las ofertas.'));
+      console.error('[MARKETPLACE_FILTER_ERROR]', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [debouncedQ, activeChip, filters]);
+  }, [debouncedQ, filters, onlyMine, listings, user?.id]);
 
   useEffect(() => {
-    fetchListings();
-  }, [fetchListings]);
+    if (listings.length === 0 && !isLoading) {
+      refreshListings();
+    }
+  }, []);
 
-  const onRefresh = () => {
+  useEffect(() => {
+    fetchFilteredListings();
+  }, [fetchFilteredListings, listings]);
+
+  const onRefresh = async () => {
     setRefreshing(true);
-    fetchListings();
+    await refreshListings();
+    setRefreshing(false);
   };
 
   const applyFilters = () => {
     setIsFilterVisible(false);
-    fetchListings();
+    fetchFilteredListings();
   };
 
   const clearFilters = () => {
@@ -102,17 +120,25 @@ export const MarketplaceScreen = () => {
       city: '',
       category: 'Todos'
     });
-    setActiveChip('Todos');
+    setOnlyMine(false);
+    setSearchInput('');
     setIsFilterVisible(false);
   };
 
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
-    header: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: theme.background, borderBottomWidth: 1, borderBottomColor: theme.border },
-    searchContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: theme.surface, borderRadius: 12, paddingHorizontal: 12, height: 45 },
-    filterButton: { width: 45, height: 45, backgroundColor: theme.surface, borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: theme.border },
+    header: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: theme.background, borderBottomWidth: 1, borderBottomColor: theme.border },
+    searchContainer: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: theme.surface, borderRadius: 12, paddingHorizontal: 12, height: 48, borderWidth: 1, borderColor: theme.border },
+    actionButton: { width: 48, height: 48, backgroundColor: theme.surface, borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: theme.border },
+    actionButtonActive: { backgroundColor: theme.primary, borderColor: theme.primary },
     searchInput: { flex: 1, marginLeft: 8, fontSize: 16, color: theme.text.primary },
+    
+    quickFilters: { flexDirection: 'row', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, gap: 10 },
+    pill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
+    pillActive: { backgroundColor: isDarkMode ? 'rgba(82, 183, 136, 0.2)' : '#F0F9FF', borderColor: theme.primary },
+    pillText: { fontSize: 13, fontWeight: '700', color: theme.text.secondary },
+    pillTextActive: { color: theme.primary },
 
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
     modalContent: { backgroundColor: theme.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '80%' },
@@ -132,13 +158,7 @@ export const MarketplaceScreen = () => {
     clearButtonText: { color: theme.text.secondary, fontWeight: '700' },
     applyButton: { flex: 2, padding: 16, borderRadius: 12, alignItems: 'center', backgroundColor: theme.primary },
     applyButtonText: { color: 'white', fontWeight: '700' },
-
-    chipScrollContainer: { backgroundColor: theme.background, paddingVertical: 8 },
-    chips: { paddingHorizontal: 16, gap: 8 },
-    chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
-    chipActive: { backgroundColor: theme.primary, borderColor: theme.primary },
-    chipText: { color: theme.text.secondary, fontWeight: '600' },
-    chipTextActive: { color: 'white' },
+    
     list: { padding: 10 },
     productCard: { flex: 1, margin: 6, backgroundColor: theme.card, borderRadius: 16, overflow: 'hidden', elevation: 2, borderWidth: 1, borderColor: theme.border },
     imageContainer: { width: '100%', height: 150, position: 'relative' },
@@ -164,10 +184,7 @@ export const MarketplaceScreen = () => {
         onPress={() => navigation.navigate('LivestockDetail', { item })}
       >
         <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: mainImage }}
-            style={styles.productImage}
-          />
+          <Image source={{ uri: mainImage }} style={styles.productImage} />
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
             <Text style={styles.statusBadgeText}>{getStatusLabel(item.status)}</Text>
           </View>
@@ -201,14 +218,31 @@ export const MarketplaceScreen = () => {
               value={searchInput}
               onChangeText={setSearchInput}
             />
+            {searchInput !== '' && (
+              <TouchableOpacity onPress={() => setSearchInput('')}>
+                <X size={18} color={theme.text.muted} />
+              </TouchableOpacity>
+            )}
           </View>
           <TouchableOpacity
-            style={styles.filterButton}
+            style={styles.actionButton}
             onPress={() => setIsFilterVisible(true)}
           >
             <SlidersHorizontal size={22} color={theme.primary} />
           </TouchableOpacity>
         </View>
+      </View>
+
+      {/* Filtro rápido: Mis Publicaciones */}
+      <View style={styles.quickFilters}>
+        <TouchableOpacity 
+          style={[styles.pill, onlyMine && styles.pillActive]}
+          onPress={() => setOnlyMine(!onlyMine)}
+        >
+          <User size={16} color={onlyMine ? theme.primary : theme.text.secondary} />
+          <Text style={[styles.pillText, onlyMine && styles.pillTextActive]}>Mis Ofertas</Text>
+          {onlyMine && <X size={14} color={theme.primary} />}
+        </TouchableOpacity>
       </View>
 
       <Modal
@@ -260,16 +294,6 @@ export const MarketplaceScreen = () => {
                 />
               </View>
 
-              <Text style={styles.filterLabel}>Radio de búsqueda (metros)</Text>
-              <TextInput
-                placeholder="Ej: 5000"
-                placeholderTextColor={theme.text.muted}
-                keyboardType="numeric"
-                style={styles.input}
-                value={filters.radius}
-                onChangeText={(v) => setFilters({ ...filters, radius: v })}
-              />
-
               <Text style={styles.filterLabel}>Provincia</Text>
               <TextInput
                 placeholder="Nombre de la provincia"
@@ -301,27 +325,13 @@ export const MarketplaceScreen = () => {
         </View>
       </Modal>
 
-      <View style={styles.chipScrollContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {chips.map((c) => (
-            <TouchableOpacity
-              key={c}
-              style={[styles.chip, activeChip === c && styles.chipActive]}
-              onPress={() => setActiveChip(c)}
-            >
-              <Text style={[styles.chipText, activeChip === c && styles.chipTextActive]}>{c}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {loading && !refreshing ? (
+      {(isLoading || loading) && !refreshing ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={theme.primary} />
         </View>
       ) : (
         <FlatList
-          data={listings}
+          data={localListings}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
           numColumns={2}

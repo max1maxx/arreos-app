@@ -4,6 +4,7 @@ import {
   SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert 
 } from 'react-native';
 import { Mail, Lock, LogIn } from 'lucide-react-native';
+import { api, getApiErrorMessage } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -22,11 +23,17 @@ export const LoginScreen = ({ navigation }: any) => {
 
     setLoading(true);
     try {
-      // Simulación de login o llamada real a la API
-      // En una app real aquí iría la llamada al backend
-      // await login(token, userData, role);
-    } catch (error) {
-      Alert.alert('Error', 'Credenciales incorrectas.');
+      const response = await api.post('/api/auth/login', { email, password });
+      
+      if (response.data?.token) {
+        const { token, data: userData } = response.data;
+        // El rol en el backend suele venir como string, el login espera Role
+        await login(token, userData, userData.role);
+        // Navigation se manejará automáticamente por el AppNavigator al cambiar el estado del user
+      }
+    } catch (error: any) {
+      console.error('[LOGIN_ERROR]', error);
+      Alert.alert('Error de Inicio de Sesión', getApiErrorMessage(error, 'Credenciales incorrectas o problema de conexión.'));
     } finally {
       setLoading(false);
     }

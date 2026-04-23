@@ -11,6 +11,8 @@ import { FileText, X, Plus, Check, ChevronDown, MapPin, RefreshCcw, ChevronLeft 
 import { api, getApiErrorMessage } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLivestock } from '../context/LivestockContext';
+import { useAlert } from '../context/AlertContext';
 
 const LIVESTOCK_CATEGORIES = ['Bovino', 'Porcino', 'Equino', 'Ovinos'] as const;
 const MAX_PHOTO_EDGE = 1920;
@@ -19,6 +21,8 @@ type LivestockCategory = (typeof LIVESTOCK_CATEGORIES)[number];
 export const CreateLivestockScreen = ({ navigation }: any) => {
   const { user } = useContext(AuthContext);
   const { theme, isDarkMode } = useTheme();
+  const { addListing } = useLivestock();
+  const { showAlert } = useAlert();
   const [loading, setLoading] = useState(false);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -78,7 +82,11 @@ export const CreateLivestockScreen = ({ navigation }: any) => {
 
   const pickImage = async () => {
     if (images.length >= 10) {
-      Alert.alert('Límite alcanzado', 'Solo puedes subir un máximo de 10 fotos por publicación.');
+      showAlert({
+        title: 'Límite alcanzado',
+        message: 'Solo puedes subir un máximo de 10 fotos por publicación.',
+        type: 'warning'
+      });
       return;
     }
 
@@ -86,12 +94,11 @@ export const CreateLivestockScreen = ({ navigation }: any) => {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       quality: 0.8,
-      selectionLimit: 10 - images.length, // Límite dinámico basado en lo que ya se tiene
+      selectionLimit: 10 - images.length,
     });
     if (result.canceled) return;
 
     const prepared: string[] = [];
-    // Tomamos solo lo necesario para no exceder los 10 en total
     const remainingSlots = 10 - images.length;
     const assetsToProcess = result.assets.slice(0, remainingSlots);
 
@@ -116,11 +123,21 @@ export const CreateLivestockScreen = ({ navigation }: any) => {
         type: ['application/pdf', 'image/*'],
       });
       if (!result.canceled) {
-        if (type === 'guide') setGuide(result.assets[0]);
-        else setCertificate(result.assets[0]);
+        const file = result.assets[0];
+        const MAX_FILE_SIZE = 5 * 1024 * 1024;
+        if (file.size && file.size > MAX_FILE_SIZE) {
+          showAlert({
+            title: 'Archivo muy pesado',
+            message: `El documento "${file.name}" pesa ${(file.size / (1024 * 1024)).toFixed(2)}MB. El límite máximo permitido es de 5MB.`,
+            type: 'error'
+          });
+          return;
+        }
+        if (type === 'guide') setGuide(file);
+        else setCertificate(file);
       }
     } catch {
-      Alert.alert('Error', 'No se pudo seleccionar el documento.');
+      showAlert({ title: 'Error', message: 'No se pudo seleccionar el documento.', type: 'error' });
     }
   };
 
@@ -130,11 +147,11 @@ export const CreateLivestockScreen = ({ navigation }: any) => {
 
   const handleSubmit = async () => {
     if (!formData.breed || !formData.weight || !formData.price_per_lb || images.length === 0) {
-      Alert.alert('Error', 'Completa los campos obligatorios y sube al menos una foto.');
+      showAlert({ title: 'Faltan datos', message: 'Completa los campos obligatorios y sube al menos una foto.', type: 'warning' });
       return;
     }
     if (!user?.id) {
-      Alert.alert('Error', 'Sesión no válida.');
+      showAlert({ title: 'Sesión no válida', message: 'Por favor inicia sesión nuevamente.', type: 'error' });
       return;
     }
 
@@ -178,11 +195,16 @@ export const CreateLivestockScreen = ({ navigation }: any) => {
       });
 
       if (response.data.success) {
-        Alert.alert('¡Éxito!', 'Publicación creada.');
-        navigation.goBack();
+        addListing(response.data.data);
+        showAlert({
+          title: '¡Éxito!',
+          message: 'Tu oferta ha sido publicada correctamente.',
+          type: 'success',
+          onConfirm: () => navigation.goBack()
+        });
       }
     } catch (error: any) {
-      Alert.alert('Error', getApiErrorMessage(error));
+      showAlert({ title: 'Error', message: getApiErrorMessage(error), type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -242,16 +264,8 @@ export const CreateLivestockScreen = ({ navigation }: any) => {
             <Text style={styles.selectTriggerText}>{formData.category}</Text>
             <ChevronDown size={22} color={theme.text.muted} />
           </TouchableOpacity>
-
           <Text style={styles.label}>Raza *</Text>
-          <TextInput 
-            style={styles.input} 
-            value={formData.breed} 
-            onChangeText={(v) => setFormData({...formData, breed: v})}
-            placeholder="Ej: Brahman, Holstein..."
-            placeholderTextColor={theme.text.muted}
-          />
-
+          <TextInput style={styles.input} value={formData.breed} onChangeText={(v) => setFormData({...formData, breed: v})} placeholder="Ej: Brahman, Holstein..." placeholderTextColor={theme.text.muted} />
           <View style={styles.row}>
             <View style={{ flex: 1, marginRight: 10 }}>
               <Text style={styles.label}>Peso total (lb) *</Text>
@@ -262,10 +276,8 @@ export const CreateLivestockScreen = ({ navigation }: any) => {
               <TextInput style={styles.input} keyboardType="numeric" value={formData.quantity} onChangeText={(v) => setFormData({...formData, quantity: v})} placeholderTextColor={theme.text.muted} />
             </View>
           </View>
-
           <Text style={styles.label}>Precio por Libra ($) *</Text>
           <TextInput style={styles.input} keyboardType="numeric" value={formData.price_per_lb} onChangeText={(v) => setFormData({...formData, price_per_lb: v})} placeholderTextColor={theme.text.muted} />
-
           <Text style={styles.label}>Descripción</Text>
           <TextInput style={[styles.input, { height: 80 }]} multiline value={formData.description} onChangeText={(v) => setFormData({...formData, description: v})} placeholderTextColor={theme.text.muted} />
         </View>
@@ -278,7 +290,6 @@ export const CreateLivestockScreen = ({ navigation }: any) => {
               <Text style={styles.refreshBtnText}>GPS</Text>
             </TouchableOpacity>
           </View>
-          
           {locError ? <Text style={styles.locError}>{locError}</Text> : null}
           {listingLat && listingLng ? (
             <View style={styles.coordsRow}>
@@ -286,7 +297,6 @@ export const CreateLivestockScreen = ({ navigation }: any) => {
               <Text style={styles.coordsText}>{listingLat.toFixed(4)}, {listingLng.toFixed(4)}</Text>
             </View>
           ) : null}
-
           <View style={styles.row}>
             <TextInput style={[styles.input, { flex: 1, marginRight: 10 }]} value={locProvince} onChangeText={setLocProvince} placeholder="Provincia" placeholderTextColor={theme.text.muted} />
             <TextInput style={[styles.input, { flex: 1 }]} value={locCity} onChangeText={setLocCity} placeholder="Ciudad" placeholderTextColor={theme.text.muted} />
@@ -330,10 +340,7 @@ export const CreateLivestockScreen = ({ navigation }: any) => {
             <View style={styles.modalSheet}>
               <Text style={styles.modalTitle}>Seleccionar Categoría</Text>
               {LIVESTOCK_CATEGORIES.map((cat) => (
-                <TouchableOpacity key={cat} style={styles.modalOption} onPress={() => {
-                  setFormData({ ...formData, category: cat });
-                  setCategoryModalOpen(false);
-                }}>
+                <TouchableOpacity key={cat} style={styles.modalOption} onPress={() => { setFormData({ ...formData, category: cat }); setCategoryModalOpen(false); }}>
                   <Text style={styles.modalOptionText}>{cat}</Text>
                 </TouchableOpacity>
               ))}

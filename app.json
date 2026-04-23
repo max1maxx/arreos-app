@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -48,9 +48,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "6c68e252-8ddb-4947-8c05-6f7284c94a0b"
+        "projectId": "f573fdbb-4f6c-452c-9110-3b03ebf3b948"
       }
     },
-    "owner": "maximaxx"
+    "owner": "arreosapp"
   }
 }

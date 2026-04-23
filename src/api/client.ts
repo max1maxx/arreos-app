@@ -4,10 +4,6 @@ import CONFIG, { getApiUrl } from '../config/api';
 
 /**
  * Robust API Client for Mobile
- * Handles:
- * 1. Automatic JWT Attachment
- * 2. 401 (Unauthorized) Redirection/Logout
- * 3. Base Timeout and Headers
  */
 
 const apiClient = axios.create({
@@ -19,11 +15,17 @@ const apiClient = axios.create({
   },
 });
 
-// REQUEST INTERCEPTOR: Inject the Auth Token automatically
+// Listener para disparar el logout desde fuera de los componentes
+let logoutHandler: (() => void) | null = null;
+export const setGlobalLogoutHandler = (handler: () => void) => {
+  logoutHandler = handler;
+};
+
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     try {
-      const token = await SecureStore.getItemAsync('userToken');
+      // LLAVE CORRECTA: jwtToken (según AuthContext)
+      const token = await SecureStore.getItemAsync('jwtToken');
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -35,44 +37,30 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// RESPONSE INTERCEPTOR: Handle global error cases (e.g., 401 Logout)
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config;
-
-    // Handle session expiration
+    // Si recibimos un 401, el token no es válido o expiró
     if (error.response?.status === 401) {
-      console.warn('API Client: Unauthorized request detected. Forcing logout...');
-      
-      // Clean up local storage
-      await SecureStore.deleteItemAsync('userToken');
-      await SecureStore.deleteItemAsync('userData');
-      
-      // We could add a navigation redirect here or use a Context event
-      // emitter to force a login screen if needed.
+      console.warn('⚠️ Sesión expirada detectada (401). Cerrando sesión...');
+      if (logoutHandler) {
+        logoutHandler();
+      }
     }
 
-    // Enhance error message for the UI
     const customError = {
       ...error,
-      message: (error.response?.data as any)?.message || error.message || 'Error de conexión con el servidor',
+      message: (error.response?.data as any)?.message || (error.response?.data as any)?.error || error.message || 'Error de conexión con el servidor',
     };
 
     return Promise.reject(customError);
   }
 );
 
-/**
- * Global Utility for API Error Messages
- */
 export const getApiErrorMessage = (error: any, defaultMessage: string = 'Error de conexión'): string => {
-  if (error.response?.data?.message) {
-    return error.response.data.message;
-  }
-  if (error.message) {
-    return error.message;
-  }
+  if (error.response?.data?.message) return error.response.data.message;
+  if (error.response?.data?.error) return error.response.data.error;
+  if (error.message) return error.message;
   return defaultMessage;
 };
 

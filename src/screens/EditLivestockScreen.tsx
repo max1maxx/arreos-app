@@ -19,6 +19,8 @@ import { api, getApiErrorMessage } from '../api/client';
 import { mediaUrl } from '../config/api';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLivestock } from '../context/LivestockContext';
+import { useAlert } from '../context/AlertContext';
 import {
   LIVESTOCK_STATUS_OPTIONS,
   type LivestockStatusApi,
@@ -42,6 +44,8 @@ export const EditLivestockScreen = ({ route, navigation }: any) => {
   const { user } = useContext(AuthContext);
   const { item } = route.params as { item: any };
   const { theme, isDarkMode } = useTheme();
+  const { updateListingInState } = useLivestock();
+  const { showAlert } = useAlert();
 
   const [loading, setLoading] = useState(false);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
@@ -100,7 +104,11 @@ export const EditLivestockScreen = ({ route, navigation }: any) => {
 
   const handleSave = async () => {
     if (!formData.breed || !formData.weight || !formData.price_per_lb) {
-      Alert.alert('Error', 'Completa raza, peso y precio por libra.');
+      showAlert({
+        title: 'Faltan datos',
+        message: 'Completa raza, peso y precio por libra.',
+        type: 'warning'
+      });
       return;
     }
     setLoading(true);
@@ -124,10 +132,21 @@ export const EditLivestockScreen = ({ route, navigation }: any) => {
 
       const res = await api.patch(`/api/livestock/${item.id}`, payload);
       if (res.data?.success) {
-        Alert.alert('Listo', 'Publicación actualizada.', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+        // ACTUALIZACIÓN EN TIEMPO REAL: Actualizar el estado global
+        updateListingInState(res.data.data);
+        showAlert({
+          title: '¡Listo!',
+          message: 'Publicación actualizada correctamente.',
+          type: 'success',
+          onConfirm: () => navigation.goBack()
+        });
       }
     } catch (e: any) {
-      Alert.alert('Error', getApiErrorMessage(e, 'No se pudo guardar.'));
+      showAlert({
+        title: 'Error',
+        message: getApiErrorMessage(e, 'No se pudo guardar.'),
+        type: 'error'
+      });
     } finally {
       setLoading(false);
     }

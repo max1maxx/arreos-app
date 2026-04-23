@@ -1,30 +1,32 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, Appearance } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { LIGHT_THEME, DARK_THEME } from '../theme/constants';
 
-type ThemeType = 'light' | 'dark';
+type ThemePreference = 'light' | 'dark' | 'system';
 
 interface ThemeContextType {
   theme: typeof LIGHT_THEME;
   isDarkMode: boolean;
-  themeType: ThemeType;
+  themePreference: ThemePreference;
+  setThemePreference: (pref: ThemePreference) => void;
   toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Escuchamos el esquema del sistema
   const systemColorScheme = useColorScheme();
-  const [themeType, setThemeType] = useState<ThemeType>(systemColorScheme || 'light');
+  const [themePreference, setThemePrefState] = useState<ThemePreference>('system');
 
+  // Cargamos la preferencia guardada al iniciar
   useEffect(() => {
-    // Cargar preferencia guardada al iniciar
     const loadThemePreference = async () => {
       try {
         const savedTheme = await SecureStore.getItemAsync('themePreference');
-        if (savedTheme === 'light' || savedTheme === 'dark') {
-          setThemeType(savedTheme);
+        if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system') {
+          setThemePrefState(savedTheme as ThemePreference);
         }
       } catch (error) {
         console.error('Error loading theme preference:', error);
@@ -33,21 +35,38 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     loadThemePreference();
   }, []);
 
-  const toggleTheme = async () => {
-    const newTheme = themeType === 'light' ? 'dark' : 'light';
-    setThemeType(newTheme);
+  const setThemePreference = async (pref: ThemePreference) => {
+    setThemePrefState(pref);
     try {
-      await SecureStore.setItemAsync('themePreference', newTheme);
+      await SecureStore.setItemAsync('themePreference', pref);
     } catch (error) {
       console.error('Error saving theme preference:', error);
     }
   };
 
-  const isDarkMode = themeType === 'dark';
+  const toggleTheme = () => {
+    if (themePreference === 'system') setThemePreference('light');
+    else if (themePreference === 'light') setThemePreference('dark');
+    else setThemePreference('system');
+  };
+
+  // Determinamos el tema visual final
+  // Si la preferencia es 'system', usamos el valor real que devuelve el celular
+  const effectiveTheme = themePreference === 'system' 
+    ? (systemColorScheme === 'dark' ? 'dark' : 'light')
+    : themePreference;
+
+  const isDarkMode = effectiveTheme === 'dark';
   const theme = isDarkMode ? DARK_THEME : LIGHT_THEME;
 
   return (
-    <ThemeContext.Provider value={{ theme, isDarkMode, themeType, toggleTheme }}>
+    <ThemeContext.Provider value={{ 
+      theme, 
+      isDarkMode, 
+      themePreference, 
+      setThemePreference, 
+      toggleTheme 
+    }}>
       {children}
     </ThemeContext.Provider>
   );
