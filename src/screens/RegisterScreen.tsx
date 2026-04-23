@@ -3,11 +3,13 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, 
   KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator 
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { User, Mail, Lock, Phone, Briefcase, Truck, Home, ChevronLeft, CheckCircle2 } from 'lucide-react-native';
-import { COLORS } from '../theme/constants';
 import { api, getApiErrorMessage } from '../api/client';
+import { useTheme } from '../context/ThemeContext';
 
-export default function RegisterScreen({ navigation }: any) {
+export const RegisterScreen = ({ navigation }: any) => {
+  const { theme, isDarkMode } = useTheme();
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<'PRODUCER' | 'DRIVER'>('PRODUCER');
   
@@ -24,7 +26,6 @@ export default function RegisterScreen({ navigation }: any) {
   });
 
   const handleRegister = async () => {
-    // Validaciones básicas
     if (!formData.first_name || !formData.last_name || !formData.email || !formData.password) {
       Alert.alert('Error', 'Por favor completa los campos obligatorios.');
       return;
@@ -75,6 +76,26 @@ export default function RegisterScreen({ navigation }: any) {
     }
   };
 
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.background },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: theme.border },
+    headerTitle: { fontSize: 20, fontWeight: '800', color: theme.text.primary },
+    backBtn: { padding: 5 },
+    scrollContent: { padding: 20 },
+    sectionTitle: { fontSize: 14, fontWeight: '700', color: theme.text.secondary, textTransform: 'uppercase', marginBottom: 15, marginTop: 20 },
+    roleContainer: { flexDirection: 'row', gap: 15 },
+    roleCard: { flex: 1, backgroundColor: theme.surface, padding: 20, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: theme.border, position: 'relative' },
+    roleCardActive: { borderColor: theme.primary, backgroundColor: isDarkMode ? 'rgba(82, 183, 136, 0.1)' : '#F0F9FF', borderWidth: 2 },
+    roleText: { marginTop: 10, fontWeight: '700', color: theme.text.secondary },
+    roleTextActive: { color: theme.primary },
+    checkIcon: { position: 'absolute', top: 10, right: 10 },
+    row: { flexDirection: 'row' },
+    inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.surface, borderRadius: 12, borderWidth: 1, borderColor: theme.border, marginBottom: 15, paddingHorizontal: 15, height: 55 },
+    input: { flex: 1, marginLeft: 10, fontSize: 16, color: theme.text.primary },
+    registerBtn: { backgroundColor: theme.primary, padding: 18, borderRadius: 15, alignItems: 'center', marginTop: 20, shadowColor: theme.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+    registerBtnText: { color: 'white', fontSize: 18, fontWeight: '800' }
+  });
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -83,7 +104,7 @@ export default function RegisterScreen({ navigation }: any) {
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <ChevronLeft color={COLORS.text.primary} size={28} />
+            <ChevronLeft color={theme.text.primary} size={28} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Crear Cuenta</Text>
           <View style={{ width: 40 }} />
@@ -96,18 +117,18 @@ export default function RegisterScreen({ navigation }: any) {
               style={[styles.roleCard, role === 'PRODUCER' && styles.roleCardActive]} 
               onPress={() => setRole('PRODUCER')}
             >
-              <Briefcase color={role === 'PRODUCER' ? COLORS.primary : COLORS.text.muted} size={32} />
+              <Briefcase color={role === 'PRODUCER' ? theme.primary : theme.text.muted} size={32} />
               <Text style={[styles.roleText, role === 'PRODUCER' && styles.roleTextActive]}>Productor</Text>
-              {role === 'PRODUCER' && <CheckCircle2 size={18} color={COLORS.primary} style={styles.checkIcon} />}
+              {role === 'PRODUCER' && <CheckCircle2 size={18} color={theme.primary} style={styles.checkIcon} />}
             </TouchableOpacity>
 
             <TouchableOpacity 
               style={[styles.roleCard, role === 'DRIVER' && styles.roleCardActive]} 
               onPress={() => setRole('DRIVER')}
             >
-              <Truck color={role === 'DRIVER' ? COLORS.primary : COLORS.text.muted} size={32} />
+              <Truck color={role === 'DRIVER' ? theme.primary : theme.text.muted} size={32} />
               <Text style={[styles.roleText, role === 'DRIVER' && styles.roleTextActive]}>Transportista</Text>
-              {role === 'DRIVER' && <CheckCircle2 size={18} color={COLORS.primary} style={styles.checkIcon} />}
+              {role === 'DRIVER' && <CheckCircle2 size={18} color={theme.primary} style={styles.checkIcon} />}
             </TouchableOpacity>
           </View>
 
@@ -115,10 +136,11 @@ export default function RegisterScreen({ navigation }: any) {
           
           <View style={styles.row}>
             <View style={[styles.inputContainer, { flex: 1, marginRight: 10 }]}>
-              <User size={20} color={COLORS.text.muted} />
+              <User size={20} color={theme.text.muted} />
               <TextInput 
                 style={styles.input} 
                 placeholder="Nombre" 
+                placeholderTextColor={theme.text.muted}
                 value={formData.first_name}
                 onChangeText={(v) => setFormData({...formData, first_name: v})}
               />
@@ -127,6 +149,7 @@ export default function RegisterScreen({ navigation }: any) {
               <TextInput 
                 style={styles.input} 
                 placeholder="Apellido" 
+                placeholderTextColor={theme.text.muted}
                 value={formData.last_name}
                 onChangeText={(v) => setFormData({...formData, last_name: v})}
               />
@@ -134,10 +157,11 @@ export default function RegisterScreen({ navigation }: any) {
           </View>
 
           <View style={styles.inputContainer}>
-            <Mail size={20} color={COLORS.text.muted} />
+            <Mail size={20} color={theme.text.muted} />
             <TextInput 
               style={styles.input} 
               placeholder="Correo electrónico" 
+              placeholderTextColor={theme.text.muted}
               keyboardType="email-address"
               autoCapitalize="none"
               value={formData.email}
@@ -146,10 +170,11 @@ export default function RegisterScreen({ navigation }: any) {
           </View>
 
           <View style={styles.inputContainer}>
-            <Phone size={20} color={COLORS.text.muted} />
+            <Phone size={20} color={theme.text.muted} />
             <TextInput 
               style={styles.input} 
               placeholder="Teléfono Celular" 
+              placeholderTextColor={theme.text.muted}
               keyboardType="phone-pad"
               value={formData.phone}
               onChangeText={(v) => setFormData({...formData, phone: v})}
@@ -160,10 +185,11 @@ export default function RegisterScreen({ navigation }: any) {
             <>
               <Text style={styles.sectionTitle}>Datos de Producción</Text>
               <View style={styles.inputContainer}>
-                <Home size={20} color={COLORS.text.muted} />
+                <Home size={20} color={theme.text.muted} />
                 <TextInput 
                   style={styles.input} 
                   placeholder="Nombre de la Finca" 
+                  placeholderTextColor={theme.text.muted}
                   value={formData.finca_name}
                   onChangeText={(v) => setFormData({...formData, finca_name: v})}
                 />
@@ -173,19 +199,21 @@ export default function RegisterScreen({ navigation }: any) {
             <>
               <Text style={styles.sectionTitle}>Datos del Vehículo</Text>
               <View style={styles.inputContainer}>
-                <Briefcase size={20} color={COLORS.text.muted} />
+                <Briefcase size={20} color={theme.text.muted} />
                 <TextInput 
                   style={styles.input} 
                   placeholder="Tipo de Licencia" 
+                  placeholderTextColor={theme.text.muted}
                   value={formData.license_type}
                   onChangeText={(v) => setFormData({...formData, license_type: v})}
                 />
               </View>
               <View style={styles.inputContainer}>
-                <Truck size={20} color={COLORS.text.muted} />
+                <Truck size={20} color={theme.text.muted} />
                 <TextInput 
                   style={styles.input} 
                   placeholder="Capacidad de Carga (cabezas)" 
+                  placeholderTextColor={theme.text.muted}
                   keyboardType="numeric"
                   value={formData.vehicle_capacity}
                   onChangeText={(v) => setFormData({...formData, vehicle_capacity: v})}
@@ -196,10 +224,11 @@ export default function RegisterScreen({ navigation }: any) {
 
           <Text style={styles.sectionTitle}>Seguridad</Text>
           <View style={styles.inputContainer}>
-            <Lock size={20} color={COLORS.text.muted} />
+            <Lock size={20} color={theme.text.muted} />
             <TextInput 
               style={styles.input} 
               placeholder="Contraseña (mín. 8 caracteres)" 
+              placeholderTextColor={theme.text.muted}
               secureTextEntry
               value={formData.password}
               onChangeText={(v) => setFormData({...formData, password: v})}
@@ -207,10 +236,11 @@ export default function RegisterScreen({ navigation }: any) {
           </View>
 
           <View style={styles.inputContainer}>
-            <Lock size={20} color={COLORS.text.muted} />
+            <Lock size={20} color={theme.text.muted} />
             <TextInput 
               style={styles.input} 
               placeholder="Confirmar Contraseña" 
+              placeholderTextColor={theme.text.muted}
               secureTextEntry
               value={formData.confirmPassword}
               onChangeText={(v) => setFormData({...formData, confirmPassword: v})}
@@ -230,27 +260,4 @@ export default function RegisterScreen({ navigation }: any) {
       </SafeAreaView>
     </KeyboardAvoidingView>
   );
-}
-
-// Necesitamos importar SafeAreaView de react-native-safe-area-context
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'white' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 15 },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: COLORS.text.primary },
-  backBtn: { padding: 5 },
-  scrollContent: { padding: 20 },
-  sectionTitle: { fontSize: 14, fontWeight: '700', color: COLORS.text.muted, textTransform: 'uppercase', marginBottom: 15, marginTop: 20 },
-  roleContainer: { flexDirection: 'row', gap: 15 },
-  roleCard: { flex: 1, backgroundColor: '#F8FAFC', padding: 20, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0', position: 'relative' },
-  roleCardActive: { borderColor: COLORS.primary, backgroundColor: '#F0F9FF', borderWidth: 2 },
-  roleText: { marginTop: 10, fontWeight: '700', color: COLORS.text.muted },
-  roleTextActive: { color: COLORS.primary },
-  checkIcon: { position: 'absolute', top: 10, right: 10 },
-  row: { flexDirection: 'row' },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 15, paddingHorizontal: 15, height: 55 },
-  input: { flex: 1, marginLeft: 10, fontSize: 16, color: COLORS.text.primary },
-  registerBtn: { backgroundColor: COLORS.primary, padding: 18, borderRadius: 15, alignItems: 'center', marginTop: 20, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
-  registerBtnText: { color: 'white', fontSize: 18, fontWeight: '800' }
-});
+};
