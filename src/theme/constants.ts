@@ -1,16 +1,38 @@
-export const COLORS = {
+export const LIGHT_THEME = {
   background: '#FFFFFF',
-  surface: '#F8F9FA',
-  primary: '#1B4332', // Forest Green (Acento)
+  surface: '#F8FAFC',
+  card: '#FFFFFF',
+  primary: '#1B4332', 
+  secondary: '#2D6A4F',
   text: {
     primary: '#0F172A',
-    secondary: '#64748B',
+    secondary: '#475569',
     muted: '#94A3B8'
   },
   border: '#E2E8F0',
   success: '#10B981',
   error: '#EF4444'
 };
+
+export const DARK_THEME = {
+  background: '#0F172A', // Slate 900
+  surface: '#1E293B',    // Slate 800
+  card: '#1E293B',
+  primary: '#52B788',    // Un verde más brillante para contraste en oscuro
+  secondary: '#40916C',
+  text: {
+    primary: '#F8FAFC',
+    secondary: '#CBD5E1',
+    muted: '#64748B'
+  },
+  border: '#334155',    // Slate 700
+  success: '#34D399',
+  error: '#F87171'
+};
+
+// Mantenemos COLORS apuntando a LIGHT_THEME por defecto para no romper componentes existentes
+// mientras migramos a usar el hook useTheme
+export const COLORS = LIGHT_THEME;
 
 export const MOCK_DATA = {
   feed: [

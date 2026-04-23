@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,21 +19,22 @@ import { Search, SlidersHorizontal, MapPin, Plus, X } from 'lucide-react-native'
 import { useNavigation } from '@react-navigation/native';
 import { api, getApiErrorMessage } from '../api/client';
 import { mediaUrl } from '../config/api';
-import { COLORS } from '../theme/constants';
 import { parseLivestockListResponse } from '../utils/parseLivestockListResponse';
 import { getStatusLabel, getStatusColor } from '../utils/statusTranslations';
+import { useTheme } from '../context/ThemeContext';
 
 const chips = ['Todos', 'Bovino', 'Porcino', 'Equino', 'Ovinos'];
 
 export const MarketplaceScreen = () => {
   const navigation = useNavigation<any>();
+  const { theme, isDarkMode } = useTheme();
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeChip, setActiveChip] = useState('Todos');
   const [searchInput, setSearchInput] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
-  
+
   // Estados para filtros
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [filters, setFilters] = useState({
@@ -56,12 +57,10 @@ export const MarketplaceScreen = () => {
     try {
       const params: any = {};
       if (debouncedQ) params.q = debouncedQ;
-      
-      // Aplicar categoría desde chips o filtro
+
       const cat = activeChip !== 'Todos' ? activeChip : filters.category;
       if (cat !== 'Todos') params.category = cat;
 
-      // Aplicar filtros adicionales
       if (filters.minPrice) params.minPrice = filters.minPrice;
       if (filters.maxPrice) params.maxPrice = filters.maxPrice;
       if (filters.radius) params.radius = filters.radius;
@@ -107,17 +106,66 @@ export const MarketplaceScreen = () => {
     setIsFilterVisible(false);
   };
 
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.background },
+    header: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: theme.background, borderBottomWidth: 1, borderBottomColor: theme.border },
+    searchContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: theme.surface, borderRadius: 12, paddingHorizontal: 12, height: 45 },
+    filterButton: { width: 45, height: 45, backgroundColor: theme.surface, borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: theme.border },
+    searchInput: { flex: 1, marginLeft: 8, fontSize: 16, color: theme.text.primary },
+
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    modalContent: { backgroundColor: theme.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '80%' },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+    modalTitle: { fontSize: 20, fontWeight: '800', color: theme.text.primary },
+    modalScroll: { marginBottom: 20 },
+    filterLabel: { fontSize: 14, fontWeight: '700', color: theme.text.secondary, marginBottom: 8, marginTop: 16 },
+    row: { flexDirection: 'row', alignItems: 'center' },
+    input: { backgroundColor: theme.surface, borderRadius: 12, padding: 12, fontSize: 14, color: theme.text.primary, borderWidth: 1, borderColor: theme.border },
+    modalChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    modalChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
+    modalChipActive: { backgroundColor: theme.primary, borderColor: theme.primary },
+    modalChipText: { fontSize: 12, color: theme.text.secondary, fontWeight: '600' },
+    modalChipTextActive: { color: 'white' },
+    modalFooter: { flexDirection: 'row', gap: 12, paddingBottom: Platform.OS === 'ios' ? 20 : 0 },
+    clearButton: { flex: 1, padding: 16, borderRadius: 12, alignItems: 'center', backgroundColor: theme.surface },
+    clearButtonText: { color: theme.text.secondary, fontWeight: '700' },
+    applyButton: { flex: 2, padding: 16, borderRadius: 12, alignItems: 'center', backgroundColor: theme.primary },
+    applyButtonText: { color: 'white', fontWeight: '700' },
+
+    chipScrollContainer: { backgroundColor: theme.background, paddingVertical: 8 },
+    chips: { paddingHorizontal: 16, gap: 8 },
+    chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
+    chipActive: { backgroundColor: theme.primary, borderColor: theme.primary },
+    chipText: { color: theme.text.secondary, fontWeight: '600' },
+    chipTextActive: { color: 'white' },
+    list: { padding: 10 },
+    productCard: { flex: 1, margin: 6, backgroundColor: theme.card, borderRadius: 16, overflow: 'hidden', elevation: 2, borderWidth: 1, borderColor: theme.border },
+    imageContainer: { width: '100%', height: 150, position: 'relative' },
+    productImage: { width: '100%', height: '100%', backgroundColor: theme.surface },
+    statusBadge: { position: 'absolute', top: 8, right: 8, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+    statusBadgeText: { color: 'white', fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
+    productInfo: { padding: 12 },
+    price: { fontSize: 18, fontWeight: '900', color: theme.primary },
+    title: { fontSize: 14, fontWeight: '700', color: theme.text.primary, marginVertical: 4 },
+    location: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    locationText: { fontSize: 11, color: theme.text.secondary, flex: 1 },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 },
+    emptyText: { color: theme.text.muted, fontSize: 16 },
+    fab: { position: 'absolute', bottom: 20, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center', elevation: 5 },
+  });
+
   const renderItem = ({ item }: { item: any }) => {
     const mainImage = item.images_url?.length > 0 ? mediaUrl(item.images_url[0]) : 'https://via.placeholder.com/400';
-    
+
     return (
       <TouchableOpacity
         style={styles.productCard}
         onPress={() => navigation.navigate('LivestockDetail', { item })}
       >
         <View style={styles.imageContainer}>
-          <Image 
-            source={{ uri: mainImage }} 
+          <Image
+            source={{ uri: mainImage }}
             style={styles.productImage}
           />
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
@@ -130,7 +178,7 @@ export const MarketplaceScreen = () => {
             {item.category} - {item.breed || 'Cruza'}
           </Text>
           <View style={styles.location}>
-            <MapPin size={12} color={COLORS.text.muted} />
+            <MapPin size={12} color={theme.text.muted} />
             <Text style={styles.locationText} numberOfLines={1}>
               {[item.city, item.province].filter(Boolean).join(', ') || item.seller?.profile?.finca_name || 'Ubicación no disponible'}
             </Text>
@@ -145,24 +193,24 @@ export const MarketplaceScreen = () => {
       <View style={styles.header}>
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>
-            <Search size={20} color={COLORS.text.muted} />
+            <Search size={20} color={theme.text.muted} />
             <TextInput
               placeholder="Buscar ganado, raza..."
+              placeholderTextColor={theme.text.muted}
               style={styles.searchInput}
               value={searchInput}
               onChangeText={setSearchInput}
             />
           </View>
-          <TouchableOpacity 
-            style={styles.filterButton} 
+          <TouchableOpacity
+            style={styles.filterButton}
             onPress={() => setIsFilterVisible(true)}
           >
-            <SlidersHorizontal size={22} color={COLORS.primary} />
+            <SlidersHorizontal size={22} color={theme.primary} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Modal de Filtros */}
       <Modal
         visible={isFilterVisible}
         animationType="slide"
@@ -174,12 +222,11 @@ export const MarketplaceScreen = () => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Filtros Avanzados</Text>
               <TouchableOpacity onPress={() => setIsFilterVisible(false)}>
-                <X size={24} color="#1E293B" />
+                <X size={24} color={theme.text.primary} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalScroll}>
-              {/* Categoría */}
               <Text style={styles.filterLabel}>Categoría</Text>
               <View style={styles.modalChips}>
                 {chips.map((c) => (
@@ -193,11 +240,11 @@ export const MarketplaceScreen = () => {
                 ))}
               </View>
 
-              {/* Precio */}
               <Text style={styles.filterLabel}>Rango de Precio ($)</Text>
               <View style={styles.row}>
                 <TextInput
                   placeholder="Mínimo"
+                  placeholderTextColor={theme.text.muted}
                   keyboardType="numeric"
                   style={[styles.input, { flex: 1, marginRight: 8 }]}
                   value={filters.minPrice}
@@ -205,6 +252,7 @@ export const MarketplaceScreen = () => {
                 />
                 <TextInput
                   placeholder="Máximo"
+                  placeholderTextColor={theme.text.muted}
                   keyboardType="numeric"
                   style={[styles.input, { flex: 1 }]}
                   value={filters.maxPrice}
@@ -212,20 +260,20 @@ export const MarketplaceScreen = () => {
                 />
               </View>
 
-              {/* Radio en metros */}
               <Text style={styles.filterLabel}>Radio de búsqueda (metros)</Text>
               <TextInput
                 placeholder="Ej: 5000"
+                placeholderTextColor={theme.text.muted}
                 keyboardType="numeric"
                 style={styles.input}
                 value={filters.radius}
                 onChangeText={(v) => setFilters({ ...filters, radius: v })}
               />
 
-              {/* Provincia y Ciudad */}
               <Text style={styles.filterLabel}>Provincia</Text>
               <TextInput
                 placeholder="Nombre de la provincia"
+                placeholderTextColor={theme.text.muted}
                 style={styles.input}
                 value={filters.province}
                 onChangeText={(v) => setFilters({ ...filters, province: v })}
@@ -234,6 +282,7 @@ export const MarketplaceScreen = () => {
               <Text style={styles.filterLabel}>Ciudad</Text>
               <TextInput
                 placeholder="Nombre de la ciudad"
+                placeholderTextColor={theme.text.muted}
                 style={styles.input}
                 value={filters.city}
                 onChangeText={(v) => setFilters({ ...filters, city: v })}
@@ -268,7 +317,7 @@ export const MarketplaceScreen = () => {
 
       {loading && !refreshing ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={theme.primary} />
         </View>
       ) : (
         <FlatList
@@ -277,7 +326,7 @@ export const MarketplaceScreen = () => {
           keyExtractor={(item) => item.id}
           numColumns={2}
           contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
           ListEmptyComponent={
             <View style={styles.center}>
               <Text style={styles.emptyText}>No se encontraron publicaciones.</Text>
@@ -295,53 +344,3 @@ export const MarketplaceScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
-  searchContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', borderRadius: 12, paddingHorizontal: 12, height: 45 },
-  filterButton: { width: 45, height: 45, backgroundColor: '#F1F5F9', borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
-  searchInput: { flex: 1, marginLeft: 8, fontSize: 16, color: '#1E293B' },
-  
-  // Estilos del Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '80%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 20, fontWeight: '800', color: '#1E293B' },
-  modalScroll: { marginBottom: 20 },
-  filterLabel: { fontSize: 14, fontWeight: '700', color: '#64748B', marginBottom: 8, marginTop: 16 },
-  row: { flexDirection: 'row', alignItems: 'center' },
-  input: { backgroundColor: '#F1F5F9', borderRadius: 12, padding: 12, fontSize: 14, color: '#1E293B', borderWidth: 1, borderColor: '#E2E8F0' },
-  modalChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  modalChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, backgroundColor: '#F1F5F9', borderSize: 1, borderColor: '#E2E8F0' },
-  modalChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  modalChipText: { fontSize: 12, color: '#64748B', fontWeight: '600' },
-  modalChipTextActive: { color: 'white' },
-  modalFooter: { flexDirection: 'row', gap: 12, paddingBottom: Platform.OS === 'ios' ? 20 : 0 },
-  clearButton: { flex: 1, padding: 16, borderRadius: 12, alignItems: 'center', backgroundColor: '#F1F5F9' },
-  clearButtonText: { color: '#64748B', fontWeight: '700' },
-  applyButton: { flex: 2, padding: 16, borderRadius: 12, alignItems: 'center', backgroundColor: COLORS.primary },
-  applyButtonText: { color: 'white', fontWeight: '700' },
-
-  chipScrollContainer: { backgroundColor: 'white', paddingVertical: 8 },
-  chips: { paddingHorizontal: 16, gap: 8 },
-  chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' },
-  chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  chipText: { color: '#64748B', fontWeight: '600' },
-  chipTextActive: { color: 'white' },
-  list: { padding: 10 },
-  productCard: { flex: 1, margin: 6, backgroundColor: 'white', borderRadius: 16, overflow: 'hidden', elevation: 2, borderWidth: 1, borderColor: '#E2E8F0' },
-  imageContainer: { width: '100%', height: 150, position: 'relative' },
-  productImage: { width: '100%', height: '100%', backgroundColor: '#F1F5F9' },
-  statusBadge: { position: 'absolute', top: 8, right: 8, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  statusBadgeText: { color: 'white', fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
-  productInfo: { padding: 12 },
-  price: { fontSize: 18, fontWeight: '900', color: COLORS.primary },
-  title: { fontSize: 14, fontWeight: '700', color: '#1E293B', marginVertical: 4 },
-  location: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  locationText: { fontSize: 11, color: '#64748B', flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 },
-  emptyText: { color: '#94A3B8', fontSize: 16 },
-  fab: { position: 'absolute', bottom: 20, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center', elevation: 5 },
-});

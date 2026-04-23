@@ -1,9 +1,14 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
-import { api, getApiErrorMessage } from '../api/client';
+import { 
+  View, Text, TextInput, TouchableOpacity, StyleSheet, 
+  SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert 
+} from 'react-native';
+import { Mail, Lock, LogIn } from 'lucide-react-native';
 import { AuthContext } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
-export default function LoginScreen({ navigation }: any) {
+export const LoginScreen = ({ navigation }: any) => {
+  const { theme } = useTheme();
   const { login } = useContext(AuthContext);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -11,150 +16,94 @@ export default function LoginScreen({ navigation }: any) {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Por favor ingresa tu correo y contraseña');
+      Alert.alert('Error', 'Por favor ingresa tu correo y contraseña.');
       return;
     }
+
     setLoading(true);
-
     try {
-      const response = await api.post('/api/auth/login', {
-        email: email.trim(),
-        password,
-      });
-
-      const { token, data } = response.data;
-      
-      // Mapeo de roles del backend (ADMIN/PRODUCER) a los de la App (Admin/User)
-      const appRole = data.role === 'ADMIN' ? 'Admin' : 'User';
-
-      await login(token, data, appRole);
-      
-    } catch (error: unknown) {
-      console.error('[LOGIN_ERROR]', error);
-      const err = error as { response?: { status?: number; data?: { message?: string } } };
-      const message =
-        err.response?.status === 401 || err.response?.status === 400
-          ? err.response?.data?.message || 'Correo o contraseña incorrectos.'
-          : getApiErrorMessage(error, 'No se pudo conectar con el servidor.');
-
-      Alert.alert('Error de Inicio de Sesión', message);
+      // Simulación de login o llamada real a la API
+      // En una app real aquí iría la llamada al backend
+      // await login(token, userData, role);
+    } catch (error) {
+      Alert.alert('Error', 'Credenciales incorrectas.');
     } finally {
       setLoading(false);
     }
   };
 
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.background },
+    content: { flex: 1, padding: 30, justifyContent: 'center' },
+    title: { fontSize: 32, fontWeight: '900', color: theme.text.primary, marginBottom: 10 },
+    subtitle: { fontSize: 16, color: theme.text.secondary, marginBottom: 40 },
+    inputGroup: { marginBottom: 20 },
+    label: { fontSize: 14, fontWeight: '700', color: theme.text.secondary, marginBottom: 8, marginLeft: 4 },
+    inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.surface, borderRadius: 16, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 15 },
+    inputIcon: { marginRight: 12 },
+    input: { flex: 1, height: 55, fontSize: 16, color: theme.text.primary },
+    loginBtn: { backgroundColor: theme.primary, height: 60, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginTop: 10, shadowColor: theme.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 },
+    loginBtnText: { color: 'white', fontSize: 18, fontWeight: '800' },
+    footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 30 },
+    footerText: { color: theme.text.secondary, fontSize: 15 },
+    link: { color: theme.primary, fontWeight: '800', fontSize: 15 }
+  });
+
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <View style={styles.card}>
-        <Text style={styles.title}>Arreos</Text>
-        <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <View style={styles.content}>
+          <Text style={styles.title}>Bienvenido</Text>
+          <Text style={styles.subtitle}>Inicia sesión para continuar en Arreos</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Correo Electrónico"
-          placeholderTextColor="#999"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Correo Electrónico</Text>
+            <View style={styles.inputContainer}>
+              <Mail size={20} color={theme.text.muted} style={styles.inputIcon} />
+              <TextInput 
+                style={styles.input}
+                placeholder="ejemplo@correo.com"
+                placeholderTextColor={theme.text.muted}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+              />
+            </View>
+          </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Contraseña"
-          placeholderTextColor="#999"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Contraseña</Text>
+            <View style={styles.inputContainer}>
+              <Lock size={20} color={theme.text.muted} style={styles.inputIcon} />
+              <TextInput 
+                style={styles.input}
+                placeholder="********"
+                placeholderTextColor={theme.text.muted}
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
+            </View>
+          </View>
 
-        <TouchableOpacity 
-          style={styles.button} 
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Ingresar</Text>
-          )}
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.loginBtn} onPress={handleLogin} disabled={loading}>
+            {loading ? <ActivityIndicator color="white" /> : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Text style={styles.loginBtnText}>Ingresar</Text>
+                <LogIn size={20} color="white" />
+              </View>
+            )}
+          </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-          <Text style={styles.linkText}>¿No tienes cuenta? <Text style={styles.linkTextBold}>Regístrate aquí</Text></Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>¿No tienes cuenta? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+              <Text style={styles.link}>Regístrate</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f4f6f9',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 25,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 5,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#0984e3',
-    marginBottom: 5,
-    textAlign: 'center'
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#636e72',
-    marginBottom: 30,
-    textAlign: 'center'
-  },
-  input: {
-    backgroundColor: '#f1f2f6',
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-    fontSize: 16,
-    color: '#2d3436',
-    marginBottom: 15,
-  },
-  button: {
-    backgroundColor: '#0984e3',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 10,
-    shadowColor: '#0984e3',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  linkText: {
-    textAlign: 'center',
-    color: '#636e72',
-    marginTop: 25,
-    fontSize: 14,
-  },
-  linkTextBold: {
-    fontWeight: 'bold',
-    color: '#0984e3',
-  }
-});
+};

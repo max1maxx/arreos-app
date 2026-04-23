@@ -5,11 +5,13 @@ import { FeedScreen } from '../screens/FeedScreen';
 import { MarketplaceScreen } from '../screens/MarketplaceScreen';
 import { VideoReelScreen } from '../screens/ShortsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
-import { COLORS } from '../theme/constants';
+import { useTheme } from '../context/ThemeContext';
 
 const Tab = createBottomTabNavigator();
 
 export const MainTabs = () => {
+  const { theme } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -17,22 +19,23 @@ export const MainTabs = () => {
           height: 90,
           paddingBottom: 30,
           paddingTop: 10,
-          backgroundColor: 'white',
+          backgroundColor: theme.background,
           borderTopWidth: 1,
-          borderTopColor: '#F1F5F9',
+          borderTopColor: theme.border,
         },
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.text.muted,
+        tabBarActiveTintColor: theme.primary,
+        tabBarInactiveTintColor: theme.text.muted,
         headerStyle: {
+          backgroundColor: theme.background,
           elevation: 0,
           shadowOpacity: 0,
           borderBottomWidth: 1,
-          borderBottomColor: '#F1F5F9',
+          borderBottomColor: theme.border,
         },
         headerTitleStyle: {
           fontWeight: '800',
           fontSize: 20,
-          color: COLORS.text.primary,
+          color: theme.text.primary,
         }
       }}
     >
