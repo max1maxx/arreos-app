@@ -136,7 +136,7 @@ export const EditLivestockScreen = ({ route, navigation }: any) => {
         updateListingInState(res.data.data);
         showAlert({
           title: '¡Listo!',
-          message: 'Publicación actualizada correctamente.',
+          message: 'Oferta actualizada correctamente.',
           type: 'success',
           onConfirm: () => navigation.goBack()
         });
@@ -196,7 +196,7 @@ export const EditLivestockScreen = ({ route, navigation }: any) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft color={theme.text.primary} size={28} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Editar Publicación</Text>
+        <Text style={styles.headerTitle}>Editar Oferta</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
