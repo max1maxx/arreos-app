@@ -14,6 +14,7 @@ const CONFIG = {
 };
 
 export const getApiUrl = () => {
+  // Cambiamos a la URL de producción para probar el despliegue real
   return CONFIG.API_URL;
 };
 

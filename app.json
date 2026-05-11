@@ -29,6 +29,10 @@
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ],
       "edgeToEdgeEnabled": true,
@@ -51,6 +55,12 @@
         "projectId": "f573fdbb-4f6c-452c-9110-3b03ebf3b948"
       }
     },
-    "owner": "arreosapp"
+    "owner": "arreosapp",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/f573fdbb-4f6c-452c-9110-3b03ebf3b948"
+    }
   }
 }

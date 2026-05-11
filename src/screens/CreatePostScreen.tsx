@@ -101,6 +101,7 @@ export const CreatePostScreen: React.FC = () => {
       });
 
       await api.post('/api/social/posts', body, {
+        headers: { 'Content-Type': 'multipart/form-data' },
         transformRequest: (data) => data, 
       });
       

@@ -8,6 +8,8 @@ import { EditProfileScreen } from '../screens/EditProfileScreen';
 import { LivestockDetailScreen } from '../screens/LivestockDetailScreen';
 import { CreateLivestockScreen } from '../screens/CreateLivestockScreen';
 import { EditLivestockScreen } from '../screens/EditLivestockScreen';
+import { CreatePostScreen } from '../screens/CreatePostScreen';
+import { PostDetailScreen } from '../screens/PostDetailScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
 
@@ -36,6 +38,8 @@ export default function AppNavigator() {
             <Stack.Screen name="LivestockDetail" component={LivestockDetailScreen} options={{ headerShown: false }} />
             <Stack.Screen name="CreateLivestock" component={CreateLivestockScreen} options={{ headerShown: false }} />
             <Stack.Screen name="EditLivestock" component={EditLivestockScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="CreatePost" component={CreatePostScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="PostDetail" component={PostDetailScreen} options={{ headerShown: false }} />
           </>
         )}
       </Stack.Navigator>

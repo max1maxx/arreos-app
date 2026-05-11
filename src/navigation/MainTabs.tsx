@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { LayoutDashboard, ShoppingBag, PlayCircle, User } from 'lucide-react-native';
-import { FeedScreen } from '../screens/FeedScreen';
+import { CommunityScreen } from '../screens/CommunityScreen';
 import { MarketplaceScreen } from '../screens/MarketplaceScreen';
 import { VideoReelScreen } from '../screens/ShortsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
@@ -41,7 +41,7 @@ export const MainTabs = () => {
     >
       <Tab.Screen 
         name="Comunidad" 
-        component={FeedScreen} 
+        component={CommunityScreen} 
         options={{
           tabBarIcon: ({ color, size }) => <LayoutDashboard color={color} size={size} />,
         }}
