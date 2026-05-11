@@ -74,7 +74,7 @@ export const ProfileScreen = () => {
         </View>
 
         <View style={styles.statsContainer}>
-          <StatItem label="Publicaciones" value="0" theme={theme} styles={styles} />
+          <StatItem label="Ofertas" value="0" theme={theme} styles={styles} />
           <StatItem label="Seguidores" value="0" theme={theme} styles={styles} />
           <StatItem label="Ventas" value="0" theme={theme} styles={styles} />
         </View>
@@ -110,7 +110,7 @@ export const ProfileScreen = () => {
           </View>
 
           <TouchableOpacity onPress={() => navigation.navigate('MyListings')}>
-            <MenuItem Icon={LayoutGrid} label="Mis Publicaciones" theme={theme} styles={styles} />
+            <MenuItem Icon={LayoutGrid} label="Mis Ofertas" theme={theme} styles={styles} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate('CreateLivestock')}>
             <MenuItem Icon={PlusCircle} label="Nueva Oferta" theme={theme} styles={styles} />

@@ -36,23 +36,24 @@ export const MyListingsScreen = ({ navigation }: any) => {
     card: { flexDirection: 'row', backgroundColor: theme.card, borderRadius: 16, marginBottom: 16, overflow: 'hidden', borderWidth: 1, borderColor: theme.border, elevation: 2 },
     image: { width: 120, height: 120, backgroundColor: theme.surface },
     info: { flex: 1, padding: 12, justifyContent: 'space-between' },
-    statusPill: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginBottom: 6 },
-    statusPillText: { fontSize: 11, fontWeight: '800', color: 'white' },
+    statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 },
+    statusPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+    statusPillText: { fontSize: 10, fontWeight: '800', color: 'white' },
     category: { fontSize: 12, fontWeight: '700', color: theme.primary, textTransform: 'uppercase' },
-    breed: { fontSize: 16, fontWeight: '700', color: theme.text.primary },
+    breed: { fontSize: 16, fontWeight: '700', color: theme.text.primary, marginBottom: 4 },
     price: { fontSize: 18, fontWeight: '800', color: theme.primary },
-    actions: { flexDirection: 'row', gap: 10, marginTop: 10 },
-    actionBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, gap: 6 },
-    editBtn: { backgroundColor: theme.isDarkMode ? '#0c4a6e' : '#f0f7ff', flex: 1, justifyContent: 'center' },
-    deleteBtn: { backgroundColor: theme.isDarkMode ? '#451a1a' : '#fff5f5' },
-    editText: { color: theme.isDarkMode ? '#7dd3fc' : theme.primary, fontWeight: '700' },
+    actions: { flexDirection: 'row', gap: 10, marginTop: 12 },
+    actionBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 12, gap: 8, justifyContent: 'center' },
+    editBtn: { backgroundColor: theme.primary, flex: 1 },
+    deleteBtn: { backgroundColor: theme.error, width: 44, paddingHorizontal: 0 },
+    editText: { color: 'white', fontWeight: '800', fontSize: 14 },
     empty: { marginTop: 100, alignItems: 'center', paddingHorizontal: 40 },
     emptyText: { textAlign: 'center', color: theme.text.muted, fontSize: 16 }
   });
 
   const handleDelete = (id: string) => {
     showAlert({
-      title: 'Eliminar Publicación',
+      title: 'Eliminar Oferta',
       message: '¿Estás seguro? Esta acción borrará permanentemente la oferta y todas sus fotos.',
       type: 'warning',
       showCancel: true,
@@ -63,13 +64,13 @@ export const MyListingsScreen = ({ navigation }: any) => {
           await deleteListing(id);
           showAlert({
             title: '¡Hecho!',
-            message: 'Publicación eliminada correctamente.',
+            message: 'Oferta eliminada correctamente.',
             type: 'success'
           });
         } catch (error) {
           showAlert({
             title: 'Error',
-            message: 'No se pudo eliminar la publicación.',
+            message: 'No se pudo eliminar la oferta.',
             type: 'error'
           });
         }
@@ -84,20 +85,23 @@ export const MyListingsScreen = ({ navigation }: any) => {
       <View style={styles.card}>
         <Image source={{ uri: mainImage }} style={styles.image} />
         <View style={styles.info}>
-          <View style={[styles.statusPill, { backgroundColor: getStatusColor(item.status) }]}>
-            <Text style={styles.statusPillText}>{getStatusLabel(item.status)}</Text>
+          <View style={styles.statusRow}>
+            <Text style={styles.category}>{item.category}</Text>
+            <View style={[styles.statusPill, { backgroundColor: getStatusColor(item.status) }]}>
+              <Text style={styles.statusPillText}>{getStatusLabel(item.status)}</Text>
+            </View>
           </View>
-          <Text style={styles.category}>{item.category}</Text>
-          <Text style={styles.breed}>{item.breed || 'Sin raza especificada'}</Text>
+          
+          <Text style={styles.breed} numberOfLines={1}>{item.breed || 'Sin raza especificada'}</Text>
           <Text style={styles.price}>${item.total_price?.toLocaleString()}</Text>
           
           <View style={styles.actions}>
             <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => navigation.navigate('EditLivestock', { item })}>
-              <Edit3 size={18} color={theme.isDarkMode ? '#7dd3fc' : theme.primary} />
+              <Edit3 size={18} color="white" />
               <Text style={styles.editText}>Editar</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDelete(item.id)}>
-              <Trash2 size={18} color="#ff4757" />
+              <Trash2 size={18} color="white" />
             </TouchableOpacity>
           </View>
         </View>
@@ -111,7 +115,7 @@ export const MyListingsScreen = ({ navigation }: any) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeft color={theme.text.primary} size={28} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mis Publicaciones</Text>
+        <Text style={styles.headerTitle}>Mis Ofertas</Text>
       </View>
 
       {loading ? (
@@ -124,7 +128,7 @@ export const MyListingsScreen = ({ navigation }: any) => {
           contentContainerStyle={{ padding: 16 }}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={styles.emptyText}>Aún no has realizado ninguna publicación para la venta.</Text>
+              <Text style={styles.emptyText}>Aún no has realizado ninguna oferta para la venta.</Text>
             </View>
           }
         />
@@ -132,3 +136,4 @@ export const MyListingsScreen = ({ navigation }: any) => {
     </View>
   );
 };
+

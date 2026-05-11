@@ -154,10 +154,10 @@ export const MarketplaceScreen = () => {
     modalChipText: { fontSize: 12, color: theme.text.secondary, fontWeight: '600' },
     modalChipTextActive: { color: 'white' },
     modalFooter: { flexDirection: 'row', gap: 12, paddingBottom: Platform.OS === 'ios' ? 20 : 0 },
-    clearButton: { flex: 1, padding: 16, borderRadius: 12, alignItems: 'center', backgroundColor: theme.surface },
-    clearButtonText: { color: theme.text.secondary, fontWeight: '700' },
+    clearButton: { flex: 1, padding: 16, borderRadius: 12, alignItems: 'center', backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
+    clearButtonText: { color: theme.text.secondary, fontWeight: '800' },
     applyButton: { flex: 2, padding: 16, borderRadius: 12, alignItems: 'center', backgroundColor: theme.primary },
-    applyButtonText: { color: 'white', fontWeight: '700' },
+    applyButtonText: { color: 'white', fontWeight: '800' },
     
     list: { padding: 10 },
     productCard: { flex: 1, margin: 6, backgroundColor: theme.card, borderRadius: 16, overflow: 'hidden', elevation: 2, borderWidth: 1, borderColor: theme.border },
